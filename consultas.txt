@@ -141,3 +141,62 @@ INNER JOIN Grupo g
 GROUP BY g.nombre
 ORDER BY total_asignaciones DESC;
 GO
+
+
+
+
+
+/* ==========================================================
+   CONSULTA AGREGACIÓN
+   ==========================================================
+
+   Esta consulta permite visualizar de manera práctica la
+   utilidad de la agregación presente en el modelo conceptual.
+
+   En el diagrama E-R, la relación MANEJA entre Conductor y
+   Minibus fue tratada como una agregación debido a que dicha
+   relación participa posteriormente en otras relaciones
+   como ADMITE y REGISTRA.
+
+   Gracias a esta decisión, es posible relacionar en una sola
+   consulta al Grupo que admite la asignación, al Conductor,
+   al Minibus y al Encargado que registra la operación.
+
+   Esta consulta demuestra claramente cómo la agregación
+   permite reutilizar una relación como si fuera una entidad
+   independiente dentro del sistema.
+
+========================================================== */
+
+SELECT
+    g.nombre AS grupo,
+    c.nombres + ' ' + c.apellidos AS conductor,
+    mb.placa,
+    mb.marca,
+    e.nombres + ' ' + e.apellidos AS encargado,
+    r.numero_salida,
+    r.fecha,
+    r.lugar_salida,
+    r.lugar_llegada
+FROM Admite a
+
+INNER JOIN Grupo g
+    ON a.id_grupo = g.id_grupo
+
+INNER JOIN Maneja mn
+    ON a.id_maneja = mn.id_maneja
+
+INNER JOIN Conductor c
+    ON mn.id_conductor = c.id_conductor
+
+INNER JOIN Minibus mb
+    ON mn.id_minibus = mb.id_minibus
+
+INNER JOIN Registra r
+    ON mn.id_maneja = r.id_maneja
+
+INNER JOIN Encargado e
+    ON r.id_encargado = e.id_encargado
+
+ORDER BY g.nombre, r.fecha;
+GO
