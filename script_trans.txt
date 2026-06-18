@@ -1,0 +1,452 @@
+
+
+
+-- TABLA SINDICATO
+CREATE TABLE Sindicato(
+    id_sindicato INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    sigla VARCHAR(20),
+    fecha_fundacion DATE
+);
+GO
+
+-- TABLA GRUPO
+CREATE TABLE Grupo(
+    id_grupo INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    turno VARCHAR(20) NOT NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'Activo',
+    id_sindicato INT NOT NULL,
+    CONSTRAINT FK_Grupo_Sindicato
+        FOREIGN KEY(id_sindicato)
+        REFERENCES Sindicato(id_sindicato),
+    CONSTRAINT CK_Grupo_Turno
+        CHECK(turno IN ('Mañana','Tarde','Noche')),
+    CONSTRAINT CK_Grupo_Estado
+        CHECK(estado IN ('Activo','Inactivo'))
+);
+GO
+
+-- TABLA CONDUCTOR
+CREATE TABLE Conductor(
+    id_conductor INT IDENTITY(1,1) PRIMARY KEY,
+    nombres VARCHAR(60) NOT NULL,
+    apellidos VARCHAR(60) NOT NULL,
+    celular VARCHAR(20),
+    fecha_nacimiento DATE,
+    categoria_licencia CHAR(2),
+    fecha_vencimiento_licencia DATE
+);
+GO
+
+-- TABLA MINIBUS
+CREATE TABLE Minibus(
+    id_minibus INT IDENTITY(1,1) PRIMARY KEY,
+    placa VARCHAR(15) NOT NULL UNIQUE,
+    marca VARCHAR(40),
+    modelo VARCHAR(40),
+    anio SMALLINT,
+    estado VARCHAR(30) NOT NULL DEFAULT 'Activo',
+    CONSTRAINT CK_Minibus_Estado
+        CHECK(estado IN ('Activo','Mantenimiento','Fuera de servicio'))
+);
+GO
+
+-- RELACION MANEJA (AGREGACION)
+CREATE TABLE Maneja(
+    id_maneja INT IDENTITY(1,1) PRIMARY KEY,
+    id_conductor INT NOT NULL,
+    id_minibus INT NOT NULL,
+    fecha_asignacion DATE NOT NULL,
+    fecha_fin DATE NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'Activo',
+    CONSTRAINT FK_Maneja_Conductor
+        FOREIGN KEY(id_conductor)
+        REFERENCES Conductor(id_conductor),
+    CONSTRAINT FK_Maneja_Minibus
+        FOREIGN KEY(id_minibus)
+        REFERENCES Minibus(id_minibus),
+    CONSTRAINT CK_Maneja_Estado
+        CHECK(estado IN ('Activo','Finalizado')),
+    CONSTRAINT UQ_Maneja_Activo
+        UNIQUE(id_conductor,id_minibus,fecha_asignacion)
+);
+GO
+
+-- RELACION ADMITE
+CREATE TABLE Admite(
+    id_admite INT IDENTITY(1,1) PRIMARY KEY,
+    id_grupo INT NOT NULL,
+    id_maneja INT NOT NULL,
+    fecha_ingreso DATE NOT NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'Activo',
+    CONSTRAINT FK_Admite_Grupo
+        FOREIGN KEY(id_grupo)
+        REFERENCES Grupo(id_grupo),
+    CONSTRAINT FK_Admite_Maneja
+        FOREIGN KEY(id_maneja)
+        REFERENCES Maneja(id_maneja),
+    CONSTRAINT CK_Admite_Estado
+        CHECK(estado IN ('Activo','Suspendido','Retirado'))
+);
+GO
+
+-- TABLA ENCARGADO
+CREATE TABLE Encargado(
+    id_encargado INT IDENTITY(1,1) PRIMARY KEY,
+    nombres VARCHAR(60) NOT NULL,
+    apellidos VARCHAR(60) NOT NULL,
+    celular VARCHAR(20),
+    turno VARCHAR(20),
+    CONSTRAINT CK_Encargado_Turno
+        CHECK(turno IN ('Mañana','Tarde','Noche'))
+);
+GO
+
+-- RELACION REGISTRA
+CREATE TABLE Registra(
+    id_registro INT IDENTITY(1,1) PRIMARY KEY,
+    id_encargado INT NOT NULL,
+    id_maneja INT NOT NULL,
+    numero_salida INT NOT NULL,
+    fecha DATE NOT NULL,
+    lugar_salida VARCHAR(100) NOT NULL,
+    lugar_llegada VARCHAR(100) NOT NULL,
+    hora_salida TIME NOT NULL,
+    hora_llegada TIME NOT NULL,
+    observacion VARCHAR(250),
+    CONSTRAINT FK_Registra_Encargado
+        FOREIGN KEY(id_encargado)
+        REFERENCES Encargado(id_encargado),
+    CONSTRAINT FK_Registra_Maneja
+        FOREIGN KEY(id_maneja)
+        REFERENCES Maneja(id_maneja)
+);
+GO
+
+
+-- ============================================================
+--  SCRIPT DE DATOS - SISTEMA DE SINDICATO DE MINIBUSES BOLIVIA
+--  Contexto: La Paz, Bolivia
+-- ============================================================
+
+-- ============================================================
+-- 1. SINDICATOS
+-- ============================================================
+INSERT INTO Sindicato (nombre, sigla, fecha_fundacion) VALUES
+('Sindicato de Transportistas Minibuses Línea 2 Villa Fátima',   'STM-2VF',  '1985-03-12'),
+('Sindicato de Transportistas Urbanos Miraflores',               'STUM',     '1979-07-04'),
+('Sindicato Mixto de Choferes Línea 8 Cotahuma',                 'SMCH-8',   '1990-11-20'),
+('Sindicato de Minibuseros Línea 12 El Alto',                    'SML-12EA', '1995-05-01'),
+('Sindicato de Transportistas Línea 5 San Pedro',                'STL-5SP',  '1983-09-15'),
+('Sindicato Unificado de Minibuses Sopocachi',                   'SUMS',     '1988-02-28'),
+('Sindicato de Choferes Línea 7 Zona Sur',                       'SCL-7ZS',  '1992-06-10'),
+('Sindicato de Transportistas Línea 1 Ciudad Satélite',          'STL-1CS',  '1997-08-22'),
+('Sindicato Regional Minibuses Achumani',                        'SRMA',     '2001-01-30'),
+('Sindicato de Transportistas Línea 9 Periférica',               'STL-9P',   '1986-04-17');
+GO
+
+-- ============================================================
+-- 2. GRUPOS
+-- ============================================================
+INSERT INTO Grupo (nombre, turno, estado, id_sindicato) VALUES
+('Grupo A - Mañana VF',         'Mañana', 'Activo',   1),
+('Grupo B - Tarde VF',          'Tarde',  'Activo',   1),
+('Grupo C - Noche VF',          'Noche',  'Activo',   1),
+('Grupo A - Miraflores Mañana', 'Mañana', 'Activo',   2),
+('Grupo B - Miraflores Tarde',  'Tarde',  'Activo',   2),
+('Grupo A - Cotahuma Mañana',   'Mañana', 'Activo',   3),
+('Grupo B - Cotahuma Tarde',    'Tarde',  'Inactivo', 3),
+('Grupo A - El Alto Mañana',    'Mañana', 'Activo',   4),
+('Grupo B - El Alto Tarde',     'Tarde',  'Activo',   4),
+('Grupo C - El Alto Noche',     'Noche',  'Activo',   4),
+('Grupo A - San Pedro Mañana',  'Mañana', 'Activo',   5),
+('Grupo B - San Pedro Tarde',   'Tarde',  'Activo',   5),
+('Grupo A - Sopocachi Mañana',  'Mañana', 'Activo',   6),
+('Grupo B - Sopocachi Tarde',   'Tarde',  'Activo',   6),
+('Grupo A - Zona Sur Mañana',   'Mañana', 'Activo',   7),
+('Grupo B - Zona Sur Tarde',    'Tarde',  'Activo',   7),
+('Grupo C - Zona Sur Noche',    'Noche',  'Inactivo', 7),
+('Grupo A - Satélite Mañana',   'Mañana', 'Activo',   8),
+('Grupo B - Satélite Tarde',    'Tarde',  'Activo',   8),
+('Grupo A - Achumani Mañana',   'Mañana', 'Activo',   9),
+('Grupo B - Achumani Tarde',    'Tarde',  'Activo',   9),
+('Grupo A - Periférica Mañana', 'Mañana', 'Activo',   10),
+('Grupo B - Periférica Tarde',  'Tarde',  'Activo',   10),
+('Grupo C - Periférica Noche',  'Noche',  'Activo',   10),
+('Grupo D - VF Especial',       'Mañana', 'Activo',   1);
+GO
+
+-- ============================================================
+-- 3. CONDUCTORES (bolivianos, nombres reales del altiplano)
+-- ============================================================
+INSERT INTO Conductor (nombres, apellidos, celular, fecha_nacimiento, categoria_licencia, fecha_vencimiento_licencia) VALUES
+('Juan Carlos',     'Quispe Mamani',        '72341856', '1978-04-12', 'C2', '2026-04-12'),
+('Pedro Esteban',   'Condori Flores',       '71892345', '1982-09-03', 'C2', '2025-09-03'),
+('Luis Alberto',    'Mamani Chura',         '70123456', '1975-12-20', 'C1', '2024-12-20'),
+('Roberto',         'Ticona Apaza',         '79456123', '1990-06-15', 'C2', '2027-06-15'),
+('Félix Ramiro',    'Huanca Quispe',        '76543210', '1985-03-08', 'C2', '2026-03-08'),
+('Marcelo',         'Yujra Calisaya',       '72019834', '1979-11-25', 'C1', '2025-11-25'),
+('Dante Alfredo',   'Colque Limachi',       '71345678', '1988-07-30', 'C2', '2028-07-30'),
+('Edwin',           'Larico Poma',          '70987654', '1992-02-14', 'C2', '2027-02-14'),
+('Hernán',          'Vargas Gutiérrez',     '72674512', '1970-08-05', 'C1', '2024-08-05'),
+('Wilmer',          'Choque Tito',          '71123987', '1983-05-19', 'C2', '2026-05-19'),
+('Gonzalo',         'Torrez Zenteno',       '76234561', '1977-01-28', 'C1', '2025-01-28'),
+('Fidel',           'Alvarado Nina',        '70345678', '1969-10-10', 'C1', '2024-10-10'),
+('Rene Patricio',   'Canqui Mamani',        '79876543', '1993-04-22', 'C2', '2028-04-22'),
+('Severo',          'Quispe Palli',         '72456789', '1965-07-17', 'C1', '2023-07-17'),
+('David',           'Blanco Salinas',       '71567890', '1987-12-01', 'C2', '2027-12-01'),
+('Cornelio',        'Mamani Quispe',        '70678901', '1980-03-09', 'C2', '2026-03-09'),
+('Humberto',        'Paco Villca',          '79789012', '1974-06-23', 'C1', '2025-06-23'),
+('Adolfo',          'Rojas Condori',        '72890123', '1991-09-14', 'C2', '2026-09-14'),
+('Clemente',        'Aruquipa Choque',      '71901234', '1968-11-30', 'C1', '2024-11-30'),
+('Walter',          'Siñani Huanca',        '70012345', '1986-02-07', 'C2', '2027-02-07'),
+('Néstor',          'Catari Apaza',         '79123456', '1995-08-18', 'C2', '2028-08-18'),
+('Efraín',          'Marca Callisaya',      '72234567', '1972-04-02', 'C1', '2025-04-02'),
+('Rubén',           'Ccama Tola',           '71345670', '1984-10-26', 'C2', '2026-10-26'),
+('Celestino',       'Huayta Chura',         '70456789', '1963-01-15', 'C1', '2023-01-15'),
+('Jimmy',           'Quisberth Poma',       '79567890', '1994-05-31', 'C2', '2027-05-31'),
+('Zenón',           'Colque Flores',        '72678901', '1981-07-12', 'C2', '2026-07-12'),
+('Gregorio',        'Chambi Ticona',        '71789012', '1976-12-04', 'C1', '2025-12-04'),
+('Víctor Hugo',     'Limachi Apaza',        '70890123', '1989-03-27', 'C2', '2027-03-27'),
+('Primitivo',       'Poma Cari',            '79901234', '1967-09-08', 'C1', '2024-09-08'),
+('Franz',           'Velásquez Mamani',     '72012345', '1996-06-20', 'C2', '2028-06-20'),
+('Isidro',          'Huanca Nina',          '71123456', '1973-11-11', 'C1', '2025-11-11'),
+('Paulino',         'Quispe Alavi',         '70234567', '1978-08-29', 'C2', '2026-08-29'),
+('Simón',           'Tito Mamani',          '79345678', '1985-01-16', 'C2', '2026-01-16'),
+('Crisanto',        'Villca Ccoa',          '72456781', '1962-04-05', 'C1', '2023-04-05'),
+('Abelino',         'Chura Ticona',         '71567892', '1990-07-23', 'C2', '2027-07-23'),
+('Máximo',          'Rojas Quispe',         '70678903', '1969-02-18', 'C1', '2024-02-18'),
+('Celso',           'Apaza Calle',          '79789014', '1983-10-07', 'C2', '2026-10-07'),
+('Benigno',         'Condori Mamani',       '72890125', '1975-05-14', 'C1', '2025-05-14'),
+('Hilario',         'Quispe Choque',        '71901236', '1988-12-29', 'C2', '2027-12-29'),
+('Teodoro',         'Huanca Tito',          '70012347', '1971-06-06', 'C1', '2025-06-06');
+GO
+
+-- ============================================================
+-- 4. MINIBUSES (placas bolivianas formato: 2762BKP, etc.)
+-- ============================================================
+INSERT INTO Minibus (placa, marca, modelo, anio, estado) VALUES
+('2341BLP', 'Toyota',   'Hiace 3L',         2005, 'Activo'),
+('1892BKN', 'Toyota',   'Hiace 2L',         2008, 'Activo'),
+('3456BRC', 'Toyota',   'Hiace Super GL',   2010, 'Activo'),
+('0123BJS', 'Toyota',   'Hiace Commuter',   2012, 'Activo'),
+('4567BPT', 'Hyundai',  'H100',             2007, 'Activo'),
+('5678BQM', 'Hyundai',  'H1 Starex',        2009, 'Mantenimiento'),
+('6789BRL', 'Mitsubishi','L300',            2006, 'Activo'),
+('7890BSK', 'Mitsubishi','Delica',          2011, 'Activo'),
+('8901BTJ', 'Nissan',   'Urvan NV350',      2013, 'Activo'),
+('9012BUH', 'Nissan',   'Caravan',          2004, 'Fuera de servicio'),
+('0234BVG', 'Toyota',   'Hiace 3L',         2003, 'Fuera de servicio'),
+('1345BWF', 'Toyota',   'Hiace 2L',         2015, 'Activo'),
+('2456BXE', 'Toyota',   'Hiace Super GL',   2014, 'Activo'),
+('3567BYD', 'Hyundai',  'H100',             2016, 'Activo'),
+('4678BZC', 'Toyota',   'Hiace Commuter',   2018, 'Activo'),
+('5789CAB', 'Mitsubishi','L300 GL',         2017, 'Activo'),
+('6890CBZ', 'Toyota',   'Hiace 2L',         2009, 'Activo'),
+('7901CCY', 'Hyundai',  'H1 Starex',        2013, 'Activo'),
+('8012CDX', 'Nissan',   'Urvan NV350',      2016, 'Activo'),
+('9123CEW', 'Toyota',   'Hiace Super GL',   2019, 'Activo'),
+('0345CFV', 'Toyota',   'Hiace Commuter',   2020, 'Activo'),
+('1456CGU', 'Mitsubishi','Delica L300',     2008, 'Mantenimiento'),
+('2567CHT', 'Hyundai',  'H100',             2011, 'Activo'),
+('3678CIS', 'Toyota',   'Hiace 3L',         2007, 'Activo'),
+('4789CJR', 'Nissan',   'Caravan E25',      2010, 'Activo'),
+('5890CKQ', 'Toyota',   'Hiace Super GL',   2021, 'Activo'),
+('6901CLP', 'Hyundai',  'H1 Starex',        2015, 'Activo'),
+('7012CMN', 'Toyota',   'Hiace Commuter',   2012, 'Activo'),
+('8123CNM', 'Mitsubishi','L300 GL',         2014, 'Activo'),
+('9234COL', 'Toyota',   'Hiace 2L',         2016, 'Activo'),
+('0456CPK', 'Toyota',   'Hiace Super GL',   2017, 'Activo'),
+('1567CQJ', 'Nissan',   'Urvan NV350',      2018, 'Activo'),
+('2678CRI', 'Hyundai',  'H100',             2019, 'Activo'),
+('3789CSH', 'Toyota',   'Hiace Commuter',   2020, 'Activo'),
+('4890CTG', 'Mitsubishi','Delica L300',     2006, 'Fuera de servicio'),
+('5901CUF', 'Toyota',   'Hiace 3L',         2013, 'Activo'),
+('6012CVE', 'Hyundai',  'H1 Starex',        2022, 'Activo'),
+('7123CWD', 'Toyota',   'Hiace Super GL',   2011, 'Activo'),
+('8234CXC', 'Nissan',   'Urvan NV350',      2015, 'Activo'),
+('9345CYB', 'Toyota',   'Hiace Commuter',   2023, 'Activo');
+GO
+
+-- ============================================================
+-- 5. MANEJA (asignacion conductor-minibus)
+-- ============================================================
+INSERT INTO Maneja (id_conductor, id_minibus, fecha_asignacion, fecha_fin, estado) VALUES
+(1,  1,  '2020-01-05', NULL,         'Activo'),
+(2,  2,  '2019-03-10', NULL,         'Activo'),
+(3,  3,  '2018-07-01', '2023-06-30', 'Finalizado'),
+(3,  28, '2023-07-01', NULL,         'Activo'),
+(4,  4,  '2021-02-15', NULL,         'Activo'),
+(5,  5,  '2020-08-20', NULL,         'Activo'),
+(6,  6,  '2019-11-12', '2022-11-11', 'Finalizado'),
+(6,  22, '2022-11-12', NULL,         'Activo'),
+(7,  7,  '2022-04-01', NULL,         'Activo'),
+(8,  8,  '2021-09-18', NULL,         'Activo'),
+(9,  9,  '2017-06-05', '2022-06-04', 'Finalizado'),
+(9,  26, '2022-06-05', NULL,         'Activo'),
+(10, 10, '2016-03-01', '2021-03-01', 'Finalizado'),
+(10, 30, '2021-03-02', NULL,         'Activo'),
+(11, 11, '2020-10-14', NULL,         'Activo'),
+(12, 12, '2018-05-22', NULL,         'Activo'),
+(13, 13, '2022-01-10', NULL,         'Activo'),
+(14, 14, '2015-08-30', '2023-08-29', 'Finalizado'),
+(14, 36, '2023-08-30', NULL,         'Activo'),
+(15, 15, '2021-12-01', NULL,         'Activo'),
+(16, 16, '2019-07-17', NULL,         'Activo'),
+(17, 17, '2020-03-25', NULL,         'Activo'),
+(18, 18, '2022-06-08', NULL,         'Activo'),
+(19, 19, '2017-09-14', '2022-09-13', 'Finalizado'),
+(19, 32, '2022-09-14', NULL,         'Activo'),
+(20, 20, '2021-04-02', NULL,         'Activo'),
+(21, 21, '2023-01-15', NULL,         'Activo'),
+(22, 23, '2020-11-20', NULL,         'Activo'),
+(23, 24, '2019-02-28', NULL,         'Activo'),
+(24, 25, '2016-06-10', '2021-06-09', 'Finalizado'),
+(24, 35, '2021-06-10', NULL,         'Activo'),
+(25, 27, '2022-08-03', NULL,         'Activo'),
+(26, 29, '2021-07-21', NULL,         'Activo'),
+(27, 31, '2020-05-09', NULL,         'Activo'),
+(28, 33, '2022-10-17', NULL,         'Activo'),
+(29, 34, '2014-12-01', '2022-11-30', 'Finalizado'),
+(29, 37, '2022-12-01', NULL,         'Activo'),
+(30, 38, '2023-03-05', NULL,         'Activo'),
+(31, 39, '2023-06-01', NULL,         'Activo'),
+(32, 40, '2022-02-14', NULL,         'Activo'),
+(33, 1,  '2015-01-01', '2019-12-31', 'Finalizado'),
+(34, 2,  '2014-06-15', '2019-03-09', 'Finalizado'),
+(35, 5,  '2016-04-01', '2020-08-19', 'Finalizado'),
+(36, 9,  '2013-10-01', '2017-06-04', 'Finalizado'),
+(37, 11, '2018-01-10', '2020-10-13', 'Finalizado'),
+(38, 15, '2017-07-01', '2021-11-30', 'Finalizado'),
+(39, 20, '2018-09-01', '2021-04-01', 'Finalizado'),
+(40, 16, '2015-03-01', '2019-07-16', 'Finalizado');
+GO
+
+-- ============================================================
+-- 6. ADMITE (conductor+minibus dentro de un grupo)
+-- ============================================================
+INSERT INTO Admite (id_grupo, id_maneja, fecha_ingreso, estado) VALUES
+(1,  1,  '2020-01-06', 'Activo'),
+(1,  2,  '2019-03-11', 'Activo'),
+(2,  4,  '2021-02-16', 'Activo'),
+(2,  5,  '2020-08-21', 'Activo'),
+(3,  7,  '2022-04-02', 'Activo'),
+(3,  8,  '2021-09-19', 'Activo'),
+(4,  10, '2021-03-03', 'Activo'),
+(4,  11, '2020-10-15', 'Activo'),
+(5,  12, '2018-05-23', 'Activo'),
+(5,  13, '2022-01-11', 'Activo'),
+(6,  15, '2021-12-02', 'Activo'),
+(6,  16, '2019-07-18', 'Activo'),
+(7,  6,  '2019-11-13', 'Suspendido'),
+(8,  17, '2020-03-26', 'Activo'),
+(8,  18, '2022-06-09', 'Activo'),
+(9,  20, '2021-04-03', 'Activo'),
+(9,  21, '2023-01-16', 'Activo'),
+(10, 22, '2020-11-21', 'Activo'),
+(10, 23, '2019-03-01', 'Activo'),
+(11, 25, '2022-08-04', 'Activo'),
+(11, 26, '2021-07-22', 'Activo'),
+(12, 27, '2020-05-10', 'Activo'),
+(12, 28, '2022-10-18', 'Activo'),
+(13, 30, '2023-03-06', 'Activo'),
+(13, 31, '2023-06-02', 'Activo'),
+(14, 32, '2022-02-15', 'Activo'),
+(15, 14, '2023-08-31', 'Activo'),
+(15, 19, '2022-09-15', 'Activo'),
+(16, 24, '2021-06-11', 'Activo'),
+(16, 29, '2022-12-02', 'Activo'),
+(17, 9,  '2017-06-06', 'Retirado'),
+(18, 3,  '2023-07-02', 'Activo'),
+(19, 33, '2019-08-30', 'Activo'),  -- maneja finalizado, historial
+(20, 34, '2014-12-02', 'Retirado'),
+(21, 35, '2021-06-11', 'Activo'),
+(22, 36, '2014-07-01', 'Retirado'),
+(23, 37, '2018-01-11', 'Activo'),
+(24, 38, '2017-07-02', 'Activo'),
+(25, 39, '2018-09-02', 'Retirado'),
+(1,  40, '2015-03-02', 'Retirado'),
+(2,  41, '2015-01-02', 'Retirado'),
+(4,  42, '2014-06-16', 'Retirado'),
+(5,  43, '2016-04-02', 'Retirado'),
+(8,  44, '2013-10-02', 'Retirado'),
+(11, 45, '2018-01-11', 'Retirado'),
+(15, 46, '2017-07-02', 'Retirado'),
+(9,  47, '2018-09-02', 'Retirado'),
+(6,  48, '2015-03-02', 'Retirado');
+GO
+
+-- ============================================================
+-- 7. ENCARGADOS
+-- ============================================================
+INSERT INTO Encargado (nombres, apellidos, celular, turno) VALUES
+('María Elena',   'Quispe Flores',     '72341001', 'Mañana'),
+('Rosa',          'Mamani Condori',    '71892002', 'Tarde'),
+('Carmen Lucía',  'Apaza Huanca',      '70123003', 'Noche'),
+('Patricia',      'Choque Ticona',     '79456004', 'Mañana'),
+('Ana María',     'Colque Poma',       '76543005', 'Tarde'),
+('Jacinta',       'Huayta Lima',       '72019006', 'Mañana'),
+('Elvira',        'Calisaya Rojas',    '71345007', 'Noche'),
+('Beatriz',       'Limachi Vargas',    '70987008', 'Tarde'),
+('Filomena',      'Yujra Catari',      '72674009', 'Mañana'),
+('Gladys',        'Tito Chambi',       '71123010', 'Noche'),
+('Delia',         'Siñani Blanco',     '76234011', 'Mañana'),
+('Sonia',         'Larico Torrez',     '70345012', 'Tarde');
+GO
+
+-- ============================================================
+-- 8. REGISTRA (salidas registradas, rutas paceñas reales)
+-- ============================================================
+INSERT INTO Registra (id_encargado, id_maneja, numero_salida, fecha, lugar_salida, lugar_llegada, hora_salida, hora_llegada, observacion) VALUES
+(1,  1,  1,  '2024-01-08', 'Terminal Villa Fátima',         'Plaza San Francisco',       '06:00', '06:45', NULL),
+(1,  1,  2,  '2024-01-08', 'Plaza San Francisco',           'Terminal Villa Fátima',     '07:00', '07:50', NULL),
+(1,  1,  3,  '2024-01-08', 'Terminal Villa Fátima',         'Plaza San Francisco',       '08:05', '08:55', 'Tráfico en Av. Baptista'),
+(2,  2,  1,  '2024-01-08', 'Miraflores Calle 6',           'Plaza del Estudiante',      '13:00', '13:30', NULL),
+(2,  2,  2,  '2024-01-08', 'Plaza del Estudiante',          'Miraflores Calle 6',        '14:00', '14:35', NULL),
+(3,  7,  1,  '2024-01-08', 'Cotahuma Final',                'Cementerio General',        '21:00', '21:40', NULL),
+(4,  4,  1,  '2024-01-09', 'El Alto Av. 6 de Marzo',       'Ceja El Alto',              '06:00', '06:20', NULL),
+(4,  4,  2,  '2024-01-09', 'Ceja El Alto',                  'El Alto Av. 6 de Marzo',   '07:00', '07:25', NULL),
+(5,  5,  1,  '2024-01-09', 'San Pedro Av. Montes',         'Sopocachi Av. 20 de Octubre','13:30','14:10', NULL),
+(6,  8,  1,  '2024-01-09', 'Av. Periférica Inicio',        'El Alto Ciudad Satélite',   '06:15', '06:55', NULL),
+(7,  7,  1,  '2024-01-10', 'Cotahuma Final',               'Max Paredes',               '21:15', '21:50', 'Pasajero extra en puerta'),
+(8,  12, 1,  '2024-01-10', 'Zona Sur Calacoto',            'Plaza Avaroa',              '13:00', '13:55', NULL),
+(8,  12, 2,  '2024-01-10', 'Plaza Avaroa',                 'Zona Sur Calacoto',         '14:10', '15:05', 'Desvío por obras en Obrajes'),
+(9,  16, 1,  '2024-01-10', 'Sopocachi Av. Ecuador',        'Plaza Mayor Murillo',       '06:30', '07:05', NULL),
+(10, 7,  1,  '2024-01-10', 'Cotahuma Alto',                'Terminal Interprovincial',  '22:00', '22:45', NULL),
+(1,  1,  4,  '2024-01-11', 'Terminal Villa Fátima',        'Mercado Rodríguez',         '06:00', '06:50', NULL),
+(1,  1,  5,  '2024-01-11', 'Mercado Rodríguez',            'Terminal Villa Fátima',     '07:10', '08:00', 'Lluvia intensa en Av. Montes'),
+(2,  2,  3,  '2024-01-11', 'Miraflores Calle 6',           'Cementerio General',        '13:00', '13:45', NULL),
+(4,  4,  3,  '2024-01-11', 'El Alto Av. 6 de Marzo',       'Ceja El Alto',             '08:00', '08:22', NULL),
+(4,  4,  4,  '2024-01-11', 'Ceja El Alto',                 'El Alto Av. 6 de Marzo',   '09:00', '09:30', NULL),
+(5,  5,  2,  '2024-01-12', 'San Pedro Plaza',              'Garita de Lima',            '14:00', '14:40', NULL),
+(6,  8,  2,  '2024-01-12', 'Periférica Km 7',              'Villa Dolores',             '07:00', '07:35', NULL),
+(11, 20, 1,  '2024-01-12', 'Ciudad Satélite',              'Ceja El Alto',             '06:45', '07:10', NULL),
+(11, 20, 2,  '2024-01-12', 'Ceja El Alto',                 'Ciudad Satélite',          '08:00', '08:28', NULL),
+(12, 22, 1,  '2024-01-12', 'Achumani Final',               'Av. Ballivián San Miguel',  '14:30', '15:20', NULL),
+(1,  11, 1,  '2024-01-13', 'Villa Fátima Av. Lynch',       'Garita de Lima',           '06:00', '06:38', NULL),
+(2,  13, 1,  '2024-01-13', 'Miraflores Hospital',          'Plaza San Francisco',       '13:15', '13:48', NULL),
+(3,  7,  2,  '2024-01-13', 'Cotahuma Final',               'Max Paredes',              '20:30', '21:10', NULL),
+(9,  16, 2,  '2024-01-13', 'Sopocachi Parque Laikakota',   'Plaza Murillo',            '07:00', '07:35', NULL),
+(10, 7,  2,  '2024-01-13', 'Cotahuma Final',               'Cementerio',              '22:00', '22:42', 'Sin novedad'),
+(5,  26, 1,  '2024-01-14', 'Achumani Av. La Florida',     'Plaza del Estudiante',      '06:00', '07:05', NULL),
+(6,  23, 1,  '2024-01-14', 'Periférica Villa Adela',       'El Alto Ciudad Satélite',  '06:30', '07:00', NULL),
+(7,  25, 1,  '2024-01-14', 'San Pedro Cementerio',         'Zona Sur',                 '21:00', '21:55', NULL),
+(8,  15, 1,  '2024-01-14', 'Zona Sur San Miguel',          'Sopocachi',               '13:00', '13:50', 'Tráfico Av. Arce'),
+(1,  1,  6,  '2024-01-15', 'Terminal Villa Fátima',        'Plaza San Francisco',      '06:00', '06:45', NULL),
+(1,  1,  7,  '2024-01-15', 'Plaza San Francisco',          'Terminal Villa Fátima',    '07:05', '07:52', NULL),
+(4,  4,  5,  '2024-01-15', 'El Alto Ceja',                 'El Alto Av. 6 de Marzo',  '08:30', '09:00', NULL),
+(11, 20, 3,  '2024-01-15', 'Ciudad Satélite',              'Ceja El Alto',            '06:45', '07:12', NULL),
+(12, 32, 1,  '2024-01-15', 'Periférica Norte',             'Villa Adela',             '14:00', '14:30', NULL),
+(9,  27, 1,  '2024-01-15', 'Sopocachi Sur',                'Plaza Avaroa',            '06:15', '06:50', NULL),
+(2,  18, 1,  '2024-01-16', 'Av. Buenos Aires Miraflores',  'Plaza del Estudiante',    '13:30', '14:05', NULL),
+(6,  21, 1,  '2024-01-16', 'Periférica El Alto',           'Ceja',                    '06:00', '06:28', NULL),
+(5,  10, 1,  '2024-01-16', 'Achumani',                     'Sopocachi',               '06:30', '07:25', NULL),
+(3,  7,  3,  '2024-01-16', 'Cotahuma Final',               'Max Paredes',             '21:30', '22:15', NULL),
+(7,  29, 1,  '2024-01-16', 'Ciudad Satélite Sur',          'El Alto Ceja',            '21:00', '21:30', NULL),
+(10, 8,  2,  '2024-01-16', 'Periférica Km 4',              'Villa Dolores',           '22:15', '22:52', 'Revisión policial breve'),
+(1,  1,  8,  '2024-01-17', 'Terminal Villa Fátima',        'Garita de Lima',          '06:00', '06:42', NULL),
+(4,  4,  6,  '2024-01-17', 'El Alto Av. Panorámica',      'Ceja',                    '06:00', '06:18', NULL),
+(9,  17, 1,  '2024-01-17', 'Sopocachi Av. Ecuador',        'Sopocachi Sur',           '07:00', '07:20', NULL),
+(11, 31, 1,  '2024-01-17', 'Ciudad Satélite Norte',        'Ceja El Alto',            '07:30', '07:55', NULL);
+GO
