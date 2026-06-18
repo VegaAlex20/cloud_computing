@@ -1,0 +1,143 @@
+/* ==========================================================
+   CONSULTA 1
+   CONDUCTORES Y MINIBUSES ASIGNADOS
+   ==========================================================
+   Esta consulta muestra las asignaciones existentes entre
+   conductores y minibuses registradas en el sistema.
+   Permite identificar qué conductor opera cada vehículo,
+   además de visualizar información complementaria como
+   placa, marca, modelo, fecha de asignación y estado.
+
+   Su objetivo es facilitar el control y seguimiento de
+   las asignaciones realizadas dentro de la organización.
+========================================================== */
+
+SELECT
+    c.nombres + ' ' + c.apellidos AS conductor,
+    m.placa,
+    m.marca,
+    m.modelo,
+    mn.fecha_asignacion,
+    mn.estado
+FROM Maneja mn
+INNER JOIN Conductor c
+    ON mn.id_conductor = c.id_conductor
+INNER JOIN Minibus m
+    ON mn.id_minibus = m.id_minibus;
+GO
+
+
+/* ==========================================================
+   CONSULTA 2
+   CONDUCTORES ADMITIDOS POR CADA GRUPO
+   ==========================================================
+   Esta consulta permite conocer qué conductores y minibuses
+   fueron admitidos dentro de cada grupo. Para ello se
+   utilizan las relaciones entre Grupo, Admite, Maneja,
+   Conductor y Minibus.
+
+   La información obtenida permite visualizar la estructura
+   operativa de cada grupo y las asignaciones que forman
+   parte de sus actividades.
+========================================================== */
+
+SELECT
+    g.nombre AS grupo,
+    c.nombres + ' ' + c.apellidos AS conductor,
+    mb.placa,
+    a.fecha_ingreso,
+    a.estado
+FROM Admite a
+INNER JOIN Grupo g
+    ON a.id_grupo = g.id_grupo
+INNER JOIN Maneja mn
+    ON a.id_maneja = mn.id_maneja
+INNER JOIN Conductor c
+    ON mn.id_conductor = c.id_conductor
+INNER JOIN Minibus mb
+    ON mn.id_minibus = mb.id_minibus
+ORDER BY g.nombre;
+GO
+
+
+/* ==========================================================
+   CONSULTA 3
+   HISTORIAL DE REGISTROS OPERATIVOS
+   ==========================================================
+   Esta consulta muestra el historial completo de registros
+   realizados por los encargados. Además de la información
+   de salida y llegada, permite identificar al encargado,
+   conductor y vehículo involucrados en cada operación.
+
+   Su finalidad es proporcionar trazabilidad y control de
+   las actividades registradas dentro del sistema.
+========================================================== */
+
+SELECT
+    e.nombres + ' ' + e.apellidos AS encargado,
+    c.nombres + ' ' + c.apellidos AS conductor,
+    mb.placa,
+    r.numero_salida,
+    r.fecha,
+    r.lugar_salida,
+    r.lugar_llegada,
+    r.hora_salida,
+    r.hora_llegada
+FROM Registra r
+INNER JOIN Encargado e
+    ON r.id_encargado = e.id_encargado
+INNER JOIN Maneja mn
+    ON r.id_maneja = mn.id_maneja
+INNER JOIN Conductor c
+    ON mn.id_conductor = c.id_conductor
+INNER JOIN Minibus mb
+    ON mn.id_minibus = mb.id_minibus
+ORDER BY r.fecha DESC;
+GO
+
+
+/* ==========================================================
+   CONSULTA 4
+   CANTIDAD DE CONDUCTORES POR GRUPO
+   ==========================================================
+   Esta consulta utiliza funciones de agregación para
+   determinar cuántas asignaciones conductor-vehículo
+   existen dentro de cada grupo.
+
+   Los resultados permiten analizar la distribución de
+   recursos humanos y operativos dentro de la organización.
+========================================================== */
+
+SELECT
+    g.nombre AS grupo,
+    COUNT(*) AS cantidad_conductores
+FROM Admite a
+INNER JOIN Grupo g
+    ON a.id_grupo = g.id_grupo
+GROUP BY g.nombre
+ORDER BY cantidad_conductores DESC;
+GO
+
+
+/* ==========================================================
+   CONSULTA 5
+   GRUPO CON MAYOR CANTIDAD DE ASIGNACIONES
+   ==========================================================
+   Esta consulta identifica el grupo que posee la mayor
+   cantidad de asignaciones conductor-minibús registradas
+   dentro del sistema.
+
+   Puede utilizarse como un indicador de actividad para
+   determinar cuál es el grupo con mayor participación en
+   las operaciones de transporte.
+========================================================== */
+
+SELECT TOP 1
+    g.nombre AS grupo,
+    COUNT(*) AS total_asignaciones
+FROM Admite a
+INNER JOIN Grupo g
+    ON a.id_grupo = g.id_grupo
+GROUP BY g.nombre
+ORDER BY total_asignaciones DESC;
+GO
